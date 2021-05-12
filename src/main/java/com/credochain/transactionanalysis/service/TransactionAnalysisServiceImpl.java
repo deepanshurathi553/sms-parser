@@ -121,6 +121,7 @@ class TransactionAnalysisServiceImpl implements TransactionAnalysisService {
     }
 
     private Set<BankAccountInfoEntity> calculateStats(Set<BankAccountInfoEntity> accountInfoEntities) {
+        logger.info("Calculating Averages...........");
         accountInfoEntities.forEach(entity -> {
             double[] amountArray = getAmountArray(entity.getBalanceLedgers());
             entity.setAverageBalance(Arrays.stream(amountArray).average().orElse(0.0));
@@ -142,24 +143,26 @@ class TransactionAnalysisServiceImpl implements TransactionAnalysisService {
         if (size == 1) return new double[]{balanceLedgers.get(0).getAmount()};
         int diff = (int) ChronoUnit.DAYS
                 .between(balanceLedgers.get(0).getDate(), balanceLedgers.get(size - 1).getDate());
-        double[] amountArray = new double[diff];
+        logger.info("Total Days : " + (diff+1));
+        double[] amountArray = new double[diff+1];
         amountArray[0] = balanceLedgers.get(0).getAmount();
         int prev = 0;
         for (int i = 1; i < size; i++) {
             int daysDiff = (int) ChronoUnit.DAYS.between(balanceLedgers.get(i - 1).getDate(),
                                                          balanceLedgers.get(i).getDate());
             if (daysDiff > 0) {
-                amountArray[daysDiff] = balanceLedgers.get(i).getAmount();
-                prev += daysDiff;
+                amountArray[prev + daysDiff] = balanceLedgers.get(i).getAmount();
             } else {
                 amountArray[prev] = balanceLedgers.get(i).getAmount();
             }
+            prev += daysDiff;
         }
         for (int i = 1; i < amountArray.length; i++) {
             if (amountArray[i] == 0.0) {
                 amountArray[i] = amountArray[i - 1];
             }
         }
+        logger.info(Arrays.toString(amountArray));
         return amountArray;
     }
 
