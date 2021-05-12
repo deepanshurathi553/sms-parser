@@ -50,9 +50,12 @@ class TransactionAnalysisServiceImpl implements TransactionAnalysisService {
     @Override
     public TransactionInfo getTransactionInfo(Long phoneNumber, List<SMSRequest> smsRequests) {
         // Validations?
-        TransactionInfoEntity entity = new TransactionInfoEntity(phoneNumber);
+        TransactionInfoEntity entity = transactionInfoRepository.save(new TransactionInfoEntity(phoneNumber));
         Set<BankAccountInfoEntity> accountInfoEntities = new HashSet<>();
-        smsRequests.forEach(sms -> {
+        int totalMessages = smsRequests.size();
+        for (int i = 0, smsRequestsSize = smsRequests.size(); i < smsRequestsSize; i++) {
+            logger.info("Message Processing " + (i + 1) + " out of " + totalMessages);
+            SMSRequest sms = smsRequests.get(i);
             String message = sms.getMessage().toLowerCase();
             if (isTransactionalMessage(message)) {
                 logger.info("Parsing SMS : " + message);
@@ -63,6 +66,8 @@ class TransactionAnalysisServiceImpl implements TransactionAnalysisService {
                 message = message.replaceAll("acct|account", "ac");
                 message = message.replaceAll("ending", "");
                 message = message.replaceAll("with", "");
+                message = message.replaceAll("of", "");
+                message = message.replaceAll("transaction", "");
                 message = message.replaceAll("is", "");
                 message = message.replaceAll("by", "");
                 message = message.replaceAll("rs|rupees", "inr");
@@ -77,37 +82,40 @@ class TransactionAnalysisServiceImpl implements TransactionAnalysisService {
                 logger.info("Account Number Detected : " + accountNumber);
 
                 if (accountNumber != null) {
-                    BankAccountInfoEntity accountInfoEntity =
-                            accountInfoRepository.findByAccountNumber(accountNumber)
-                                                 .orElse(new BankAccountInfoEntity(accountNumber));
                     Double balance = InfoExtractionUtil.getBalance(cleanWordsList);
                     logger.info("Balance Detected : " + balance);
                     String type = InfoExtractionUtil.getTypeOfTransaction(message);
                     LocalDateTime date = LocalDateTime.ofInstant(Instant.ofEpochMilli(sms.getDate()),
                                                                  ZoneId.systemDefault());
-                    if (balance != null) {
-                        AccountBalanceLedger ledger = new AccountBalanceLedger();
-                        ledger.setAmount(balance);
-                        ledger.setDate(date);
-                        AccountBalanceLedger ledgerEntity = accountBalanceLedgerRepository.save(ledger);
-                        accountInfoEntity.getBalanceLedgers().add(ledgerEntity);
-                    }
-                    if (type != null && type.equals("credit")) {
-                        Double creditAmount = InfoExtractionUtil.getTransactionAmount(cleanWordsList);
-                        logger.info("Credited amount for this credit transaction : " + creditAmount);
-                        if (creditAmount != null) {
-                            AccountCreditLedger creditLedger = new AccountCreditLedger();
-                            creditLedger.setAmount(creditAmount);
-                            creditLedger.setDate(date);
-                            AccountCreditLedger creditLedgerEntity = accountCreditLedgerRepository.save(creditLedger);
-                            accountInfoEntity.getCreditLedgers().add(creditLedgerEntity);
+                    if (balance != null || (type != null && type.equals("credit"))) {
+                        BankAccountInfoEntity accountInfoEntity = accountInfoRepository
+                                .findByAccountNumberAndPhone(accountNumber, String.valueOf(phoneNumber))
+                                .orElse(new BankAccountInfoEntity(accountNumber, String.valueOf(phoneNumber)));
+                        if (balance != null) {
+                            AccountBalanceLedger ledger = new AccountBalanceLedger();
+                            ledger.setAmount(balance);
+                            ledger.setDate(date);
+                            AccountBalanceLedger ledgerEntity = accountBalanceLedgerRepository.save(ledger);
+                            accountInfoEntity.getBalanceLedgers().add(ledgerEntity);
                         }
+                        if (type != null && type.equals("credit")) {
+                            Double creditAmount = InfoExtractionUtil.getTransactionAmount(cleanWordsList);
+                            logger.info("Credited amount for this credit transaction : " + creditAmount);
+                            if (creditAmount != null) {
+                                AccountCreditLedger creditLedger = new AccountCreditLedger();
+                                creditLedger.setAmount(creditAmount);
+                                creditLedger.setDate(date);
+                                AccountCreditLedger creditLedgerEntity = accountCreditLedgerRepository
+                                        .save(creditLedger);
+                                accountInfoEntity.getCreditLedgers().add(creditLedgerEntity);
+                            }
+                        }
+                        accountInfoEntities.add(accountInfoRepository.save(accountInfoEntity));
                     }
-                    accountInfoEntities.add(accountInfoRepository.save(accountInfoEntity));
                 }
             }
-        });
-        entity.setAccounts(calculateStats(accountInfoEntities));
+        }
+        entity.getAccounts().addAll(calculateStats(accountInfoEntities));
         TransactionInfoEntity savedEntity = transactionInfoRepository.save(entity);
         return mapper.apply(savedEntity);
     }
@@ -165,7 +173,7 @@ class TransactionAnalysisServiceImpl implements TransactionAnalysisService {
         for (int i = size - 1; i > size - 91; i--) {
             last90daysSum += amountArray[i];
         }
-        return last90daysSum/90;
+        return last90daysSum / 90;
     }
 
     private Double getSixMonthAverageBalance(double[] amountArray) {
@@ -177,7 +185,7 @@ class TransactionAnalysisServiceImpl implements TransactionAnalysisService {
         for (int i = size - 1; i > size - 181; i--) {
             last180daysSum += amountArray[i];
         }
-        return last180daysSum/180;
+        return last180daysSum / 180;
     }
 
     private boolean isTransactionalMessage(String message) {

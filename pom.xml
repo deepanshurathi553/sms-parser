@@ -5,18 +5,6 @@
 	<groupId>com.credochain.transactionanalysis</groupId>
 	<artifactId>transactionanalysis</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<configuration>
-					<source>10</source>
-					<target>10</target>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
 	<name>transactionanalysis</name>
 	<description>Service to fetch Transaction details from SMSs</description>
 	<properties>
@@ -61,5 +49,21 @@
 			<version>2.3.1</version>
 		</dependency>
 	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
 
 </project>

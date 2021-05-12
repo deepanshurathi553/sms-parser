@@ -8,11 +8,12 @@ public class InfoExtractionUtil {
         for (int i = 0; i < messageArray.length; i++) {
             if(messageArray[i].equals("ac")){
                 if(i+1 == messageArray.length) return null;
-                int j = i+1;
-                while(j < messageArray.length){
-                    String next = messageArray[j];
-                    if(next.matches(".*\\d.*")) return next;
-                    else j++;
+                String next = messageArray[i+1];
+                if(next.matches(".*\\d.*")){
+                    next = next.replaceAll("[.:?x]","");
+                    if(next.length() >= 4){
+                        return next.substring(next.length()-4);
+                    }
                 }
                 return null;
             }
@@ -31,7 +32,11 @@ public class InfoExtractionUtil {
                    String next = messageArray[j];
                    if(next.matches("inr")){
                        String amountString = messageArray[j+1].split("\\.")[0];
-                       return Double.valueOf(amountString);
+                       try {
+                           return Double.valueOf(amountString.replaceAll(",", ""));
+                       } catch (NumberFormatException e) {
+                           return null;
+                       }
                    }
                    else j++;
                }
@@ -51,9 +56,19 @@ public class InfoExtractionUtil {
         for (int i = 0; i < messageArray.length; i++) {
             if(messageArray[i].matches(".*credit.*|.*deposit.*|.*recieved.*")){
                 if(i+1 < messageArray.length && messageArray[i + 1].equals("inr") && i+2 < messageArray.length){
-                    return Double.valueOf(messageArray[i+2]);
+                    String amountString = messageArray[i+2].split("\\.")[0];
+                    try {
+                        return Double.valueOf(amountString.replaceAll(",", ""));
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
                 } else if (i-2 > -1 && messageArray[i-2].equals("inr")){
-                    return Double.valueOf(messageArray[i-1]);
+                    String amountString = messageArray[i-1].split("\\.")[0];
+                    try {
+                        return Double.valueOf(amountString.replaceAll(",", ""));
+                    } catch (NumberFormatException e) {
+                        return null;
+                    }
                 } else return null;
             }
 

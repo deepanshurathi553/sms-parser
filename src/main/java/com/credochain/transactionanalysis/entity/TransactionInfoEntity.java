@@ -4,6 +4,7 @@ import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
+import java.util.HashSet;
 import java.util.Set;
 
 @Getter
@@ -21,5 +22,5 @@ public class TransactionInfoEntity {
     @NonNull
     private Long phone;
     @OneToMany(orphanRemoval = true, cascade = CascadeType.ALL)
-    private Set<BankAccountInfoEntity> accounts = Set.of();
+    private Set<BankAccountInfoEntity> accounts = new HashSet<>();
 }

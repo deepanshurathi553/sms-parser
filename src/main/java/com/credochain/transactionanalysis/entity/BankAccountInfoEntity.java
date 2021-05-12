@@ -25,6 +25,8 @@ public class BankAccountInfoEntity {
     private Double threeMonthAverageBalance;
     private Double sixMonthAverageBalance;
     private Double totalCredit;
+    @NonNull
+    private String phone;
 
     @OneToMany(orphanRemoval = true, cascade = CascadeType.ALL)
     private List<AccountBalanceLedger> balanceLedgers = new ArrayList<>();
