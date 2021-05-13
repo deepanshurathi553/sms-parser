@@ -85,12 +85,23 @@ class TransactionAnalysisServiceImpl implements TransactionAnalysisService {
                     Double balance = InfoExtractionUtil.getBalance(cleanWordsList);
                     logger.info("Balance Detected : " + balance);
                     String type = InfoExtractionUtil.getTypeOfTransaction(message);
+                    logger.info("Transaction Type Detected : " + type);
                     LocalDateTime date = LocalDateTime.ofInstant(Instant.ofEpochMilli(sms.getDate()),
                                                                  ZoneId.systemDefault());
-                    if (balance != null || (type != null && type.equals("credit"))) {
-                        BankAccountInfoEntity accountInfoEntity = accountInfoRepository
-                                .findByAccountNumberAndPhone(accountNumber, String.valueOf(phoneNumber))
-                                .orElse(new BankAccountInfoEntity(accountNumber, String.valueOf(phoneNumber)));
+                    Double creditAmount = null;
+                    if (type != null && type.equals("credit")) {
+                        creditAmount = InfoExtractionUtil.getTransactionAmount(cleanWordsList);
+                    }
+                    if (balance != null || creditAmount != null) {
+                        BankAccountInfoEntity accountInfoEntity;
+                        Optional<BankAccountInfoEntity> entityOptional = accountInfoRepository
+                                .findByAccountNumberAndPhone(accountNumber, String.valueOf(phoneNumber));
+                        if (entityOptional.isPresent()) {
+                            accountInfoEntity = entityOptional.get();
+                        } else {
+                            logger.info("Creating New Account Entity : " + accountNumber);
+                            accountInfoEntity = new BankAccountInfoEntity(accountNumber, String.valueOf(phoneNumber));
+                        }
                         if (balance != null) {
                             AccountBalanceLedger ledger = new AccountBalanceLedger();
                             ledger.setAmount(balance);
@@ -98,17 +109,13 @@ class TransactionAnalysisServiceImpl implements TransactionAnalysisService {
                             AccountBalanceLedger ledgerEntity = accountBalanceLedgerRepository.save(ledger);
                             accountInfoEntity.getBalanceLedgers().add(ledgerEntity);
                         }
-                        if (type != null && type.equals("credit")) {
-                            Double creditAmount = InfoExtractionUtil.getTransactionAmount(cleanWordsList);
+                        if (creditAmount != null) {
                             logger.info("Credited amount for this credit transaction : " + creditAmount);
-                            if (creditAmount != null) {
-                                AccountCreditLedger creditLedger = new AccountCreditLedger();
-                                creditLedger.setAmount(creditAmount);
-                                creditLedger.setDate(date);
-                                AccountCreditLedger creditLedgerEntity = accountCreditLedgerRepository
-                                        .save(creditLedger);
-                                accountInfoEntity.getCreditLedgers().add(creditLedgerEntity);
-                            }
+                            AccountCreditLedger creditLedger = new AccountCreditLedger();
+                            creditLedger.setAmount(creditAmount);
+                            creditLedger.setDate(date);
+                            AccountCreditLedger creditLedgerEntity = accountCreditLedgerRepository.save(creditLedger);
+                            accountInfoEntity.getCreditLedgers().add(creditLedgerEntity);
                         }
                         accountInfoEntities.add(accountInfoRepository.save(accountInfoEntity));
                     }
@@ -123,6 +130,7 @@ class TransactionAnalysisServiceImpl implements TransactionAnalysisService {
     private Set<BankAccountInfoEntity> calculateStats(Set<BankAccountInfoEntity> accountInfoEntities) {
         logger.info("Calculating Averages...........");
         accountInfoEntities.forEach(entity -> {
+            logger.info("For Account : " + entity.getAccountNumber());
             double[] amountArray = getAmountArray(entity.getBalanceLedgers());
             entity.setAverageBalance(Arrays.stream(amountArray).average().orElse(0.0));
             entity.setThreeMonthAverageBalance(getThreeMonthAverageBalance(amountArray));
