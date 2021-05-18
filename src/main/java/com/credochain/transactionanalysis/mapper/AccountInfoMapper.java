@@ -15,6 +15,8 @@ public class AccountInfoMapper implements Function<BankAccountInfoEntity, Accoun
                       .averageBalance(entity.getAverageBalance())
                       .totalCredit(entity.getTotalCredit())
                       .threeMonthAverageBalance(entity.getThreeMonthAverageBalance())
-                      .sixMonthAverageBalance(entity.getSixMonthAverageBalance()).build();
+                      .sixMonthAverageBalance(entity.getSixMonthAverageBalance())
+                      .threeMonthCredit(entity.getThreeMonthCredit())
+                      .sixMonthCredit(entity.getSixMonthCredit()).build();
     }
 }

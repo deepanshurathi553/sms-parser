@@ -7,5 +7,7 @@ import java.util.List;
 
 public interface TransactionAnalysisService {
 
-    TransactionInfo getTransactionInfo(Long phoneNumber, List<SMSRequest> smsRequests);
+    Integer storeMessagesForProcessing(Long phoneNumber, List<SMSRequest> smsRequests);
+
+    TransactionInfo getTransactionInfo(Long phoneNumber);
 }

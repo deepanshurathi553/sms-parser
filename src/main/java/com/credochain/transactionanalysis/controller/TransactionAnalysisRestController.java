@@ -18,10 +18,16 @@ public class TransactionAnalysisRestController {
     private TransactionAnalysisService service;
 
     @RequestMapping(value = "/{phoneNumber}/messages", method = RequestMethod.POST)
-    public ResponseEntity<TransactionInfo> getTransactionInfo(@PathVariable("phoneNumber") Long phoneNumber,
+    public ResponseEntity<String> processMessages(@PathVariable("phoneNumber") Long phoneNumber,
                                                               @RequestBody List<SMSRequest> messages) {
-        TransactionInfo transactionInfo = service.getTransactionInfo(phoneNumber, messages);
-        return new ResponseEntity<>(transactionInfo, HttpStatus.OK);
+        Integer messagesForProcessing = service.storeMessagesForProcessing(phoneNumber, messages);
+        return new ResponseEntity<>("Analysing " + messagesForProcessing + " transactional messages. Please check for" +
+                                            " status in some time", HttpStatus.OK);
+    }
+
+    @RequestMapping(value = "/{phoneNumber}/info", method = RequestMethod.GET)
+    public ResponseEntity<TransactionInfo> getTransactionInfo(@PathVariable("phoneNumber") Long phoneNumber){
+        return new ResponseEntity<>(service.getTransactionInfo(phoneNumber), HttpStatus.OK);
     }
 
 

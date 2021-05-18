@@ -3,9 +3,10 @@ package com.credochain.transactionanalysis.entity;
 import lombok.*;
 import org.hibernate.annotations.GenericGenerator;
 
-import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.Table;
 
 @Getter
 @Setter
@@ -25,12 +26,9 @@ public class BankAccountInfoEntity {
     private Double threeMonthAverageBalance;
     private Double sixMonthAverageBalance;
     private Double totalCredit;
+    private Double threeMonthCredit;
+    private Double sixMonthCredit;
     @NonNull
-    private String phone;
-
-    @OneToMany(orphanRemoval = true, cascade = CascadeType.ALL)
-    private List<AccountBalanceLedger> balanceLedgers = new ArrayList<>();
-    @OneToMany(orphanRemoval = true, cascade = CascadeType.ALL)
-    private List<AccountCreditLedger> creditLedgers = new ArrayList<>();
+    private Long phone;
 
 }

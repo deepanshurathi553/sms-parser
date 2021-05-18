@@ -14,4 +14,6 @@ public class Account {
     private Double threeMonthAverageBalance;
     private Double sixMonthAverageBalance;
     private Double totalCredit;
+    private Double threeMonthCredit;
+    private Double sixMonthCredit;
 }
