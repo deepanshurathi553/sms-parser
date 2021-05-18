@@ -67,7 +67,9 @@ class TransactionAnalysisServiceImpl implements TransactionAnalysisService {
                 logger.info("Message after correction : " + message);
                 LocalDateTime date = LocalDateTime.ofInstant(Instant.ofEpochMilli(sms.getDate()),
                                                              ZoneId.systemDefault());
-                messageEntities.add(new MessageEntity(phoneNumber, date, message));
+                if(message.contains("ac")){
+                    messageEntities.add(new MessageEntity(phoneNumber, date, message));
+                }
             }
         }
         messageEntityRepository.saveAll(messageEntities);
